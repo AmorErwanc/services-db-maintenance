@@ -1,0 +1,2 @@
+# llm_call_log 原始调用日志只保留 30 天；北京时间每天 03:30 执行。
+30 3 * * * /usr/bin/flock -n /tmp/services-db-maintenance-llm-call-log.lock /home/flow/docker-services/services-db-maintenance/deploy/run-llm-call-log-cleanup.sh
