@@ -1,0 +1,68 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - deploy/prod
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  部署生产:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 校验脚本
+        run: bash -n scripts/*.sh deploy/*.sh
+
+      - name: 配置 SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.AVATAR_SSH_KEY }}
+          AVATAR_HOST: ${{ secrets.AVATAR_HOST }}
+          AVATAR_PORT: ${{ secrets.AVATAR_PORT }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/avatar_key
+          chmod 600 ~/.ssh/avatar_key
+          ssh-keyscan -p "$AVATAR_PORT" "$AVATAR_HOST" >> ~/.ssh/known_hosts
+
+      - name: 同步项目文件
+        env:
+          AVATAR_HOST: ${{ secrets.AVATAR_HOST }}
+          AVATAR_PORT: ${{ secrets.AVATAR_PORT }}
+          AVATAR_USER: ${{ secrets.AVATAR_USER }}
+        run: |
+          rsync -az --delete \
+            --exclude='.git/' \
+            --exclude='mysql.cnf' \
+            -e "ssh -i ~/.ssh/avatar_key -p $AVATAR_PORT" \
+            ./ "$AVATAR_USER@$AVATAR_HOST:/home/flow/docker-services/services-db-maintenance/"
+
+      - name: 激活定时任务并验证
+        env:
+          AVATAR_HOST: ${{ secrets.AVATAR_HOST }}
+          AVATAR_PORT: ${{ secrets.AVATAR_PORT }}
+          AVATAR_USER: ${{ secrets.AVATAR_USER }}
+        run: |
+          ssh -i ~/.ssh/avatar_key -p "$AVATAR_PORT" "$AVATAR_USER@$AVATAR_HOST" <<'REMOTE'
+          set -euo pipefail
+          cd /home/flow/docker-services/services-db-maintenance
+          test -r mysql.cnf
+          chmod 700 .
+          chmod 600 mysql.cnf
+          chmod +x scripts/cleanup-llm-call-log.sh deploy/run-llm-call-log-cleanup.sh
+          {
+            crontab -l 2>/dev/null | grep -v 'services-db-maintenance' || true
+            cat deploy/services-db-maintenance.cron
+          } | crontab -
+          ./scripts/cleanup-llm-call-log.sh --dry-run
+          crontab -l | grep 'services-db-maintenance'
+          REMOTE

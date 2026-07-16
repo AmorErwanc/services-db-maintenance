@@ -10,6 +10,7 @@
 
 - 脚本型运维项目：不提供 HTTP API，不运行常驻服务，不需要 Fastify、Prisma、Docker、健康检查或业务表。
 - 部署形态：脚本复制到 `avatar-01` 宿主机，由 `flow` 用户 crontab 单实例执行。
+- 发布链路：`main` 不部署；唯一部署分支 `deploy/prod` 通过 GitHub Actions 同步到生产。
 - 数据范围：维护跨服务共享表；任何删除策略必须先确认对所有业务统一生效。
 
 ## Git 提交规范（必读）

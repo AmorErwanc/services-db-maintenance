@@ -7,6 +7,13 @@
 - MySQL 私有配置：`mysql.cnf`，权限必须为 `0600`，不进入 Git
 - 定时任务：`flow` 用户 crontab，北京时间每天 03:30
 
+## 自动部署
+
+- GitHub：`https://github.com/AmorErwanc/services-db-maintenance`
+- `main` 不部署；推送 `deploy/prod` 自动同步到生产。
+- GitHub Secrets：`AVATAR_HOST`、`AVATAR_PORT`、`AVATAR_USER`、`AVATAR_SSH_KEY`。
+- 部署保留服务器私有 `mysql.cnf`，重新安装 crontab，并以 dry-run 验证数据库连通性和过期数量。
+
 ## 安全边界
 
 - 默认 dry-run；只有 `--apply` 才删除。
