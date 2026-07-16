@@ -14,7 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  部署生产:
+  deploy:
+    name: 部署生产
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

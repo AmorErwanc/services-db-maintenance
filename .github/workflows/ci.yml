@@ -11,7 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  校验脚本:
+  validate:
+    name: 校验脚本
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
